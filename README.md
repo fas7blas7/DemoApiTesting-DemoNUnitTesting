@@ -27,6 +27,44 @@ Project Setup 🛠️
     Create a demoData.json file in the root directory or specify the path to a valid JSON file for testing the deserialization. 📝
 
 Code Walkthrough 📚
+WeatherForecast Class 🌦️
+
+The project includes a WeatherForecast class that serves as a model for weather data. It contains three properties: Date, TemperatureC, and Summary, which can be serialized and deserialized into/from JSON.
+
+public class WeatherForecast
+{
+    public DateTime Date { get; set; } = DateTime.Now;
+    
+    //[JsonProperty("temperature_c")]
+    public int TemperatureC { get; set; } = 30;
+
+    public string Summary { get; set; } = "Hot summer days";
+}
+
+Properties:
+
+    Date: A DateTime property that stores the date of the forecast. It's initialized to the current date and time by default (DateTime.Now).
+    TemperatureC: An integer property representing the temperature in Celsius. By default, it’s set to 30 (hot day).
+    Summary: A string property for a summary of the weather (e.g., "Hot summer days").
+
+JsonProperty Attribute (Commented Out):
+
+//[JsonProperty("temperature_c")]
+
+    If uncommented, this attribute changes the serialized name of the TemperatureC property to temperature_c in the resulting JSON. For example, it would serialize like this:
+
+    {
+      "Date": "2025-02-28T14:45:00",
+      "temperature_c": 30,
+      "Summary": "Hot summer days"
+    }
+
+Usage:
+
+    The WeatherForecast class can be serialized and deserialized using Newtonsoft.Json and System.Text.Json.
+    When serialized, the object is converted into a JSON string that can be transmitted to a web API or saved locally.
+    The object can also be created from a JSON string by deserializing it.
+
 1. JSON Serialization and Deserialization
 
     System.Text.Json.JsonSerializer and Newtonsoft.Json.JsonConvert are used for serializing and deserializing JSON to/from WeatherForecast objects. 🌦️
