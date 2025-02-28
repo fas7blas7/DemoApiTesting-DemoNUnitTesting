@@ -11,6 +11,7 @@ Features ✨
     Handling URL Segments in HTTP requests. 🔗
     Basic Authentication in POST requests. 🔑
     NUnit Test Automation for validating API requests and responses. 🧪
+    Testing ZipCode API using Zippopotamus API. 📍
 
 Prerequisites ⚙️
 
@@ -169,6 +170,45 @@ Tests:
     Test_GetAllIssuesFromARepo: Fetches all issues from a GitHub repository and checks that there are more than one issue and validates key properties for each issue.
     Test_CreateGitHubIssue: Creates a new issue on GitHub and validates that the issue has a valid ID, number, and title.
     Test_EditIssue: Edits an existing issue and validates that the changes were successful by checking the status code and issue details.
+
+NUnit Unit Tests for Zippopotamus API 🌍
+
+We also include tests for a ZipCode API (Zippopotamus API), which retrieves location data based on a country code and postal code. The following test, ZippopotamusTest, validates that the expected location is returned for the given postal code.
+
+using DemoNunitTest.Models;
+using Newtonsoft.Json;
+using RestSharp;
+
+namespace DemoNunitTest
+{
+    public class ZippopotamusTest
+    {
+        [TestCase("BG", "1000", "Sofija")]
+        [TestCase("BG", "5000", "Veliko Turnovo")]
+        [TestCase("CA", "M5S", "Toronto")]
+        [TestCase("GB", "B1", "Birmingham")]
+        [TestCase("DE", "01067", "Dresden")]
+        public void TestZippopotamus(
+            string countryCode, string zipCode,
+            string expectedPlace)
+        {
+            // Arrange
+            var restClient = new RestClient("https://api.zippopotam.us");
+            var httpRequest = new RestRequest(countryCode + "/" + zipCode, Method.Get);
+
+            // Act
+            RestResponse httpResponse = restClient.Execute(httpRequest);
+            var location = JsonConvert.DeserializeObject<Location>(httpResponse.Content);
+
+            // Assert
+            StringAssert.Contains(expectedPlace, location.Places[0].PlaceName);
+        }
+    }
+}
+
+Tests:
+
+    TestZippopotamus: Validates that the place name returned by the Zippopotamus API contains the expected place for a given country code and zip code.
 
 Example Output 🎉
 
