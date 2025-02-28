@@ -1,6 +1,6 @@
 Demo API Testing 🚀
 
-This project demonstrates how to work with APIs using different JSON libraries and make HTTP requests using the RestSharp library in C#. It shows various ways to handle JSON serialization/deserialization with both built-in (System.Text.Json) and popular external (Newtonsoft.Json) libraries. It also covers making GET and POST requests with RestSharp, including handling authentication. 🔐
+This project demonstrates how to work with APIs using different JSON libraries and make HTTP requests using the RestSharp library in C#. It shows various ways to handle JSON serialization/deserialization with both built-in (System.Text.Json) and popular external (Newtonsoft.Json) libraries. It also covers making GET and POST requests with RestSharp, including handling authentication. 🔐 Additionally, it includes NUnit-based unit tests to automate and validate API requests. 🧪
 Features ✨
 
     JSON Serialization/Deserialization with System.Text.Json and Newtonsoft.Json. 📦
@@ -10,20 +10,24 @@ Features ✨
     Making HTTP Requests with the RestSharp library (GET and POST). 🌐
     Handling URL Segments in HTTP requests. 🔗
     Basic Authentication in POST requests. 🔑
+    NUnit Test Automation for validating API requests and responses. 🧪
 
 Prerequisites ⚙️
 
     .NET SDK (5.0 or later). 📥
     Visual Studio or any C# editor of your choice. 💻
-    Install NuGet packages for RestSharp and Newtonsoft.Json:
+    Install NuGet packages for RestSharp, Newtonsoft.Json, and NUnit:
 
     dotnet add package RestSharp
     dotnet add package Newtonsoft.Json
+    dotnet add package NUnit
+    dotnet add package NUnit3TestAdapter
+    dotnet add package Microsoft.NET.Test.Sdk
 
 Project Setup 🛠️
 
     Clone the repository or download the source code. 📂
-    Ensure you have the necessary NuGet packages installed (RestSharp, Newtonsoft.Json). 📦
+    Ensure you have the necessary NuGet packages installed (RestSharp, Newtonsoft.Json, NUnit). 📦
     Create a demoData.json file in the root directory or specify the path to a valid JSON file for testing the deserialization. 📝
 
 Code Walkthrough 📚
@@ -59,55 +63,112 @@ JsonProperty Attribute (Commented Out):
       "Summary": "Hot summer days"
     }
 
-Usage:
+NUnit Unit Tests for GitHub API 🧪
 
-    The WeatherForecast class can be serialized and deserialized using Newtonsoft.Json and System.Text.Json.
-    When serialized, the object is converted into a JSON string that can be transmitted to a web API or saved locally.
-    The object can also be created from a JSON string by deserializing it.
+The project also includes NUnit-based unit tests that validate various API calls to GitHub. These tests demonstrate how to use RestSharp to interact with the GitHub API and verify responses. Below is the class UnitTestsDemo, which contains multiple test cases to interact with GitHub issues.
 
-1. JSON Serialization and Deserialization
+using DemoNunitTest.Models;
+using RestSharp;
+using RestSharp.Authenticators;
+using System.Net;
+using System.Text.Json;
 
-    System.Text.Json.JsonSerializer and Newtonsoft.Json.JsonConvert are used for serializing and deserializing JSON to/from WeatherForecast objects. 🌦️
-    Example of serializing an object to JSON:
-
-string weatherInfo = JsonSerializer.Serialize(forecast);
-
-Example of deserializing JSON to an object:
-
-    WeatherForecast forecastFromJson = JsonSerializer.Deserialize<WeatherForecast>(jsonString);
-
-2. Anonymous Types
-
-    The project demonstrates how to deserialize JSON into an anonymous object with JsonConvert.DeserializeAnonymousType. 🎭
-
-    var person = JsonConvert.DeserializeAnonymousType(json, template);
-
-3. Applying Custom Naming Strategy
-
-    The code demonstrates how to apply a custom snake_case naming strategy for JSON properties using DefaultContractResolver and SnakeCaseNamingStrategy. 🐍
-
-4. Working with JObject
-
-    This part of the code uses JObject to dynamically parse and manipulate JSON content. 🔄
-
-5. Making HTTP Requests 🌐
-
-    GET Request: Fetching data from the GitHub API using RestSharp. 📡
-
-var client = new RestClient("https://api.github.com");
-var request = new RestRequest("/users/softuni/repos", Method.Get);
-var response = client.Execute(request);
-
-Using URL Segments: Demonstrates how to add URL segments to a request URL. 🔗
-
-var requestURLSegments = new RestRequest("/repos/{user}/{repo}/issues/{id}", Method.Get);
-
-POST Request with Authentication: Shows how to perform an authenticated POST request. 🔐
-
-    var clientWithAuthentication = new RestClient("https://api.github.com")
+namespace DemoNunitTest
+{
+    public class UnitTestsDemo
     {
-        Authenticator = new HttpBasicAuthenticator("userName", "api-Token")
-    };
+        RestClient client;
+
+        [SetUp]
+        public void Setup()
+        {
+            var options = new RestClientOptions("https://api.github.com")
+            {
+                MaxTimeout = 3000,
+                Authenticator = new HttpBasicAuthenticator("username", "token")
+            };
+
+            this.client = new RestClient(options);
+        }
+
+        [TearDown]
+        public void Teardown()
+        {
+            this.client.Dispose();
+        }
+
+        [Test]
+        public void Test_GitHubAPIRequest()
+        {
+            var request = new RestRequest("/repos/testnakov/test-nakov-repo/issues", Method.Get);
+            var response = client.Get(request);
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        [Test]
+        public void Test_GetAllIssuesFromARepo()
+        {
+            var request = new RestRequest("repos/testnakov/test-nakov-repo/issues");
+            var response = client.Execute(request);
+            var issues = JsonSerializer.Deserialize<List<Issue>>(response.Content);
+
+            Assert.That(issues.Count > 1);
+
+            foreach (var issue in issues)
+            {
+                Assert.That(issue.id, Is.GreaterThan(0));
+                Assert.That(issue.number, Is.GreaterThan(0));
+                Assert.That(issue.title, Is.Not.Empty);
+            }
+        }
+
+        private Issue CreateIssue(string title, string body)
+        {
+            var request = new RestRequest("repos/testnakov/test-nakov-repo/issues");
+            request.AddBody(new { body, title });
+            var response = client.Execute(request, Method.Post);
+            var issue = JsonSerializer.Deserialize<Issue>(response.Content);
+            return issue;
+        }
+
+        [Test]
+        public void Test_CreateGitHubIssue()
+        {
+            string title = "This is a Demo Issue";
+            string body = "QA Back-End Automation Course February 2024";
+            var issue = CreateIssue(title, body);
+            Assert.That(issue.id, Is.GreaterThan(0));
+            Assert.That(issue.number, Is.GreaterThan(0));
+            Assert.That(issue.title, Is.Not.Empty);
+        }
+
+        [Test]
+        public void Test_EditIssue()
+        {
+            var request = new RestRequest("repos/testnakov/test-nakov-repo/issues/4946");
+            request.AddJsonBody(new
+            {
+                title = "Changing the name of the issue that I created"
+            });
+
+            var response = client.Execute(request, Method.Patch);
+            var issue = JsonSerializer.Deserialize<Issue>(response.Content);
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(issue.id, Is.GreaterThan(0), "Issue ID should be greater than 0.");
+            Assert.That(response.Content, Is.Not.Empty, "The response content should not be empty.");
+            Assert.That(issue.number, Is.GreaterThan(0), "Issue number should be greater than 0.");
+            Assert.That(issue.title, Is.EqualTo("Changing the name of the issue that I created"), "The issue title should match the new title.");
+        }
+    }
+}
+
+Tests:
+
+    Test_GitHubAPIRequest: Sends a GET request to the GitHub API and checks if the response status code is OK (200).
+    Test_GetAllIssuesFromARepo: Fetches all issues from a GitHub repository and checks that there are more than one issue and validates key properties for each issue.
+    Test_CreateGitHubIssue: Creates a new issue on GitHub and validates that the issue has a valid ID, number, and title.
+    Test_EditIssue: Edits an existing issue and validates that the changes were successful by checking the status code and issue details.
 
 Example Output 🎉
 
